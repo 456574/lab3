@@ -37,3 +37,31 @@ def send_request(host, port, request_file):
                 else:
                     print(f"Invalid command: {cmd}")
                     continue
+                
+                 # Calculate total message length (NNN includes command + content)
+                msg_len = len(msg) + 4  # 3-digit prefix + 1 space (e.g., "123 P...")
+                if msg_len > 999:
+                    print(f"{line}: ERR message too long")
+                    continue
+                # Format full message: "NNN CMD..."
+                full_msg = f"{msg_len:03d} {msg}"
+                # Send message to server
+                s.sendall(full_msg.encode())
+                # Receive and parse response
+                response = s.recv(1024).decode()
+                if not response:
+                    print(f"{line}: No response from server")
+                    continue
+                # Extract response length (first 3 digits)
+                resp_len = int(response[:3])
+                # Extract response content (status + details)
+                resp_content = response[4:resp_len+3]  # Skip NNN and space
+                print(f"{line}: {resp_content}")  # Format: "CMD...: RESPONSE"
+
+if __name__ == "__main__":
+    # Validate command-line arguments
+    if len(sys.argv) != 4:
+        print("Usage: python client.py <host> <port> <request_file>")
+        exit(1)
+    # Start client with provided arguments
+    send_request(sys.argv[1], int(sys.argv[2]), sys.argv[3])
